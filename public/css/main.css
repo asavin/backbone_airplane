@@ -83,3 +83,24 @@ left: 815px;
   left: 500px;
   font-size: 22px;
 }
+
+#landing_gear_switch {
+  width: 70px;
+  height: 52px;
+  position: absolute;
+  transition: left 1s;
+  -webkit-transition: left 1s;
+}
+
+.landing_gear_on {
+  background: url("../img/landing-gear-on.png");
+  left: 875px;
+  top: 121px;
+
+}
+
+.landing_gear_off {
+  background: url("../img/landing-gear-off.png");
+  left: 805px;
+  top: 121px;
+}

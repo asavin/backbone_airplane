@@ -51,6 +51,16 @@
               <div class="altitude_data_number"><%= average %></div>
             </div>
         </script>
+        
+        <!-- Landing gear switch template -->
+        <script type="text/template" id="landing-gear-template">
+        <% if (extended == true) { %>
+          <div id="landing_gear_switch" class="landing_gear_on"></div>
+        <% } else { %>
+          <div id="landing_gear_switch" class="landing_gear_off"></div>
+        <% } %>
+          
+        </script>
     </head>
     <body>
       <div id="container">

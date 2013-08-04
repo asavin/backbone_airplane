@@ -117,6 +117,59 @@
   
   
   //
+  // Airplane landing gear
+  //
+  
+  window.LandingGear = Backbone.Model.extend({
+    defaults: {
+      extended: false
+    },
+    
+    initialize: function() {
+     this.on('change:extended', this.updateServer, this);
+    },
+    
+    updateServer: function() {
+      
+    }
+  });
+  
+  window.LandingGearView = Backbone.View.extend({
+    id: 'landing_gear_container',
+    
+    initialize: function(){
+      _.bindAll(this, 'render');
+      this.model.bind('change', this.render);
+      this.template = _.template($('#landing-gear-template').html());
+    },
+    
+    events: {
+      'click #landing_gear_switch': 'toggleGear'
+    },
+    
+    toggleGear: function() {
+      console.log('toggling landing gear');
+      var gearExtended = this.model.get('extended');
+      if(gearExtended) {
+        // Retracting gear
+        this.model.set('extended', false);
+      } else {
+        // Extending gear
+        this.model.set('extended', true);
+      }
+    },
+    
+    render: function() {
+      var renderedContent = this.template(this.model.toJSON());
+      $(this.el).html(renderedContent);
+      return this;
+    }
+  });
+  
+  var landingGear = new LandingGear();
+  var landingGearView = new LandingGearView({model: landingGear});
+  
+  //
   // Main router
   //
   
@@ -133,6 +186,7 @@
       $container.empty();
       $container.append(speedView.render().el);
       $container.append(altitudeView.render().el);
+      $container.append(landingGearView.render().el);
     }
   });
   
@@ -145,7 +199,7 @@
   //
   // Websockets logic
   //
-  
+  var ws;
   window.initSockets = function() {
     if ("WebSocket" in window)
     {  
@@ -155,7 +209,7 @@
        $('#connection_state_text').text('Connecting');
        
        // Let us open a web socket
-       var ws = new WebSocket("ws://ec2-79-125-71-146.eu-west-1.compute.amazonaws.com:8888/telemetry");
+       ws = new WebSocket("ws://ec2-79-125-71-146.eu-west-1.compute.amazonaws.com:8888/telemetry");
        ws.onopen = function()
        {
          // Update connection indicator
