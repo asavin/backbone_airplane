@@ -104,3 +104,57 @@ left: 815px;
   left: 805px;
   top: 121px;
 }
+
+#flaps_container {
+  position: absolute;
+  top: 258px;
+}
+
+#flaps_switch {
+  position: absolute;
+  background: url("../img/flaps-switch.png");
+  width: 20px;
+  height: 50px;
+}
+
+/* Positions of the flap switch */
+
+.flap_0 {
+  left: 805px;
+}
+
+.flap_1 {
+  left: 827px;
+}
+
+.flap_2 {
+  left: 850px;
+}
+
+.flap_3 {
+  left: 875px;
+}
+
+.flap_4 {
+  left: 900px;
+}
+
+.flap_5 {
+  left: 925px;
+}
+
+/* Elements for switching the flaps */
+
+#flaps_gears {
+position: absolute;
+top: 0px;
+left: 805px;
+width: 140px;
+height: 50px;
+}
+
+#flaps_gears a {
+height: 70px;
+width: 20px;
+display: inline-block;
+}

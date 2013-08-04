@@ -59,7 +59,19 @@
         <% } else { %>
           <div id="landing_gear_switch" class="landing_gear_off"></div>
         <% } %>
-          
+        </script>
+        
+        <!-- Flaps control template -->
+        <script type="text/template" id="flaps-template">
+          <div id="flaps_switch" class="flap_<%= state %>"></div>
+          <div id="flaps_gears">
+            <a href="#" class="flap_state" data-flap="0"></a>
+            <a href="#" class="flap_state" data-flap="1"></a>
+            <a href="#" class="flap_state" data-flap="2"></a>
+            <a href="#" class="flap_state" data-flap="3"></a>
+            <a href="#" class="flap_state" data-flap="4"></a>
+            <a href="#" class="flap_state" data-flap="5"></a>
+          </div>
         </script>
     </head>
     <body>

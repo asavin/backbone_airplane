@@ -130,7 +130,7 @@
     },
     
     updateServer: function() {
-      
+      updateLandingGearStatus(this.get('extended'));
     }
   });
   
@@ -166,8 +166,55 @@
     }
   });
   
-  var landingGear = new LandingGear();
+  window.landingGear = new LandingGear();
   var landingGearView = new LandingGearView({model: landingGear});
+  
+  //
+  // Airplane flaps control
+  //
+  
+  window.Flaps = Backbone.Model.extend({
+    defaults: {
+      state: 0
+    },
+    
+    initialize: function() {
+     this.on('change:state', this.updateServer, this);
+    },
+    
+    updateServer: function() {
+      //updateFlapsStatus(this.get('state'));
+    }
+  });
+  
+  window.FlapsView = Backbone.View.extend({
+    id: 'flaps_container',
+    
+    initialize: function(){
+      _.bindAll(this, 'render');
+      this.model.bind('change', this.render);
+      this.template = _.template($('#flaps-template').html());
+    },
+    
+    events: {
+      'click .flap_state': 'changeFlapState'
+    },
+    
+    changeFlapState: function(ev) {
+      var flap_state = $(ev.target).data('flap');
+      console.log("You've clicked on flap #" + flap_state);
+    },
+    
+    render: function() {
+      console.log("rendering flaps");
+      var renderedContent = this.template(this.model.toJSON());
+      $(this.el).html(renderedContent);
+      return this;
+    }
+  });
+  
+  window.flaps = new Flaps();
+  window.flapsView = new FlapsView({model: flaps});
   
   //
   // Main router
@@ -187,6 +234,7 @@
       $container.append(speedView.render().el);
       $container.append(altitudeView.render().el);
       $container.append(landingGearView.render().el);
+      $container.append(flapsView.render().el);
     }
   });
   
@@ -285,11 +333,40 @@
           }
         }
       }
+      
+      if (parsed_objects.hasOwnProperty('control')) {
+        if(parsed_objects.control.hasOwnProperty('landing_gear')) {
+          if(validateLandingGear(parsed_objects.control.landing_gear)) {
+            landingGear.set('extended', parsed_objects.control.landing_gear);
+          }
+        }
+        
+        if(parsed_objects.control.hasOwnProperty('flaps')) {
+          if(validateFlaps(parsed_objects.control.flaps)) {
+            flaps.set('state', parsed_objects.control.flaps);
+          }
+        }
+      }
     }
     catch (err) {
       console.log('Invalid data detected');
     }
-    
+  };
+  
+  // Updating server with new data
+  var updateLandingGearStatus = function(value) {
+    console.log('Updating server with new landing gear value');
+    try {
+      if(value) {
+        msg = {"type": "landing_gear", "value": 1}
+      } else {
+        msg = {"type": "landing_gear", "value": 0}
+      }
+      ws.send(JSON.stringify(msg));
+    }
+    catch(err) {
+       console.log("Error sending message to the server");   
+    }
   };
   
   // Validating value of speed in knots
@@ -327,5 +404,26 @@
     
     return (value >= minAltitude && value <= maxAltitude);
   };
+  
+  var validateLandingGear = function(value) {
+    if (isNaN(value))
+      return false;
+      
+    if (value == 0 || value == 1) {
+      return true;
+    }
+    
+    return false;
+  };
+  
+  window.validateFlaps = function(value) {
+    var flapsMin = 0;
+    var flapsMax = 5;
+    
+    if (isNaN(value))
+      return false;
+    
+    return (value >= flapsMin && value <= flapsMax);
+  }
 
 })(Zepto);
