@@ -22,7 +22,7 @@ body {
 #connection_state_container {
 position: absolute;
 top: 435px;
-left: 815px;
+left: 830px;
 }
 
 #connection_indicator {
@@ -32,9 +32,12 @@ left: 815px;
 }
 
 #connection_state_text {
-  font-size: 14px;
+  font-size: 16px;
   padding: 10px 0 0 10px;
   color: white;
+  position: absolute;
+  top: -8px;
+  left: 20px;
 }
 
 
@@ -68,6 +71,15 @@ left: 815px;
   top: 410px;
   left: 170px;
   font-size: 22px;
+}
+
+#speed_needle {
+  background: url("../img/needle-big-s.png");
+  width: 6px;
+  height: 180px;
+  position: absolute;
+  top: 140px;
+  left: 225px;
 }
 
 #current_altitude_num {

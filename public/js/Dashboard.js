@@ -35,7 +35,6 @@
       // Now calculating the average speed
       average = dataSum / dataArray.length;
       this.set('average', average);
-      console.log(average);
     
       // Updating min speed value
       if (this.get('min') != '') {
@@ -55,8 +54,70 @@
   
   
   //
-  // Speed related view
+  // Landing Gear model for storing extended/retracted values
   //
+  
+  window.LandingGear = Backbone.Model.extend({
+    defaults: {
+      extended: false
+    },
+    
+    initialize: function() {
+     this.on('change:extended', this.updateServer, this);
+    },
+    
+    updateServer: function() {
+      updateLandingGearStatus(this.get('extended'));
+    }
+  });
+  
+  // Utility method for validation new landing gear values
+  window.validateLandingGear = function(value) {
+    if (isNaN(value))
+      return false;
+      
+    if (value == 0 || value == 1) {
+      return true;
+    }
+    
+    return false;
+  };
+  
+  
+  //
+  // Flaps model for storing flaps current state
+  //
+  
+  window.Flaps = Backbone.Model.extend({
+    defaults: {
+      state: 0
+    },
+    
+    initialize: function() {
+     this.on('change:state', this.updateServer, this);
+    },
+    
+    updateServer: function() {
+      updateFlapsStatus(this.get('state'));
+    }
+  });
+  
+  // Utility method for validation new flaps values
+  window.validateFlaps = function(value) {
+    var flapsMin = 0;
+    var flapsMax = 5;
+    
+    if (isNaN(value))
+      return false;
+    
+    return (value >= flapsMin && value <= flapsMax);
+  };
+  
+  
+  //
+  // View for Speed model
+  //
+  
   window.Speed = Telemetry.extend({
   });
   
@@ -72,9 +133,35 @@
     render: function() {
       var renderedContent = this.template(this.model.toJSON());
       $(this.el).html(renderedContent);
+      
+      // Updating the needle position
+      var coeff = 0.72; // Result of 360 degree divide to 500 knots
+      var currentSpeed = this.model.get('current');
+      var degree = currentSpeed * coeff;
+      rotation_property = "rotate(" + degree.toString() + "deg)";
+      $('#speed_needle').css('-webkit-transform', rotation_property);
+      
       return this;
     }
   });
+  
+  // Utility method for validating value of speed in knots
+  window.validateSpeed = function(value) {
+    var maxSpeed = 420;
+    var minSpeed = 0;
+    var maxDifferenceToPreviousValue = 200; // safe assumptions here
+    
+    // Check if value is not a number
+    if (isNaN(value))
+      return false;
+    
+    // Filtering out values with too big difference to the previous value
+    var previousValue = _.last(speed.get('dataArray'));
+    if (Math.abs(value - previousValue) > maxDifferenceToPreviousValue)
+      return false;
+
+    return (value >= minSpeed && value <= maxSpeed);
+  };
   
   // Creating actual objects for Speed model and view
   window.speed = new Speed({});
@@ -117,22 +204,8 @@
   
   
   //
-  // Airplane landing gear
+  // Airplane landing gear view
   //
-  
-  window.LandingGear = Backbone.Model.extend({
-    defaults: {
-      extended: false
-    },
-    
-    initialize: function() {
-     this.on('change:extended', this.updateServer, this);
-    },
-    
-    updateServer: function() {
-      updateLandingGearStatus(this.get('extended'));
-    }
-  });
   
   window.LandingGearView = Backbone.View.extend({
     id: 'landing_gear_container',
@@ -169,23 +242,10 @@
   window.landingGear = new LandingGear();
   var landingGearView = new LandingGearView({model: landingGear});
   
-  //
-  // Airplane flaps control
-  //
   
-  window.Flaps = Backbone.Model.extend({
-    defaults: {
-      state: 0
-    },
-    
-    initialize: function() {
-     this.on('change:state', this.updateServer, this);
-    },
-    
-    updateServer: function() {
-      //updateFlapsStatus(this.get('state'));
-    }
-  });
+  //
+  // Airplane flaps control view
+  //
   
   window.FlapsView = Backbone.View.extend({
     id: 'flaps_container',
@@ -201,12 +261,12 @@
     },
     
     changeFlapState: function(ev) {
+      // Passing value from the data attribute on the html element
       var flap_state = $(ev.target).data('flap');
-      console.log("You've clicked on flap #" + flap_state);
+      this.model.set('state', flap_state);
     },
     
     render: function() {
-      console.log("rendering flaps");
       var renderedContent = this.template(this.model.toJSON());
       $(this.el).html(renderedContent);
       return this;
@@ -292,7 +352,7 @@
           $('#connection_state_text').text('Offline');
           
           // Renewing connection to the server
-          //initSockets();
+          initSockets();
        };
     }
     else
@@ -311,7 +371,7 @@
   // If Websockets are replaced with something else, just add
   // appropriate protocol handler method, and call this adapter method
   // with received data
-  var dataAdaptation = function(data) {
+  window.dataAdaptation = function(data) {
     var parsed_objects;
     try {
       parsed_objects = eval("(" + data + ")");
@@ -357,10 +417,11 @@
   var updateLandingGearStatus = function(value) {
     console.log('Updating server with new landing gear value');
     try {
+      // converting boolean value into numeric
       if(value) {
-        msg = {"type": "landing_gear", "value": 1}
+        var msg = {"type": "landing_gear", "value": 1}
       } else {
-        msg = {"type": "landing_gear", "value": 0}
+        var msg = {"type": "landing_gear", "value": 0}
       }
       ws.send(JSON.stringify(msg));
     }
@@ -369,22 +430,14 @@
     }
   };
   
-  // Validating value of speed in knots
-  var validateSpeed = function(value) {
-    var maxSpeed = 420;
-    var minSpeed = 0;
-    var maxDifferenceToPreviousValue = 200; // safe assumptions here
-    
-    // Check if value is not a number
-    if (isNaN(value))
-      return false;
-    
-    // Filtering out values with too big difference to the previous value
-    var previousValue = _.last(speed.get('dataArray'));
-    if (Math.abs(value - previousValue) > maxDifferenceToPreviousValue)
-      return false;
-
-    return (value >= minSpeed && value <= maxSpeed);
+  var updateFlapsStatus = function(value) {
+    try {
+      var msg = {"type": "flaps", "value": value};
+      ws.send(JSON.stringify(msg));
+    }
+    catch (err) {
+      console.log("Error sending message to the server");
+    }
   };
   
   // Validating new value of altitude in feet
@@ -404,26 +457,5 @@
     
     return (value >= minAltitude && value <= maxAltitude);
   };
-  
-  var validateLandingGear = function(value) {
-    if (isNaN(value))
-      return false;
-      
-    if (value == 0 || value == 1) {
-      return true;
-    }
-    
-    return false;
-  };
-  
-  window.validateFlaps = function(value) {
-    var flapsMin = 0;
-    var flapsMax = 5;
-    
-    if (isNaN(value))
-      return false;
-    
-    return (value >= flapsMin && value <= flapsMax);
-  }
 
 })(Zepto);
