@@ -16,15 +16,27 @@ body {
   background: url("../img/bg.png");
   width: 1000px;
   height: 600px;
+  color: white;
+}
+
+#connection_state_container {
+position: absolute;
+top: 435px;
+left: 815px;
 }
 
 #connection_indicator {
   width: 22px;
   height: 22px;
-  position: absolute;
-  top: 450px;
-  left: 865px;
+  display: inline-block;
 }
+
+#connection_state_text {
+  font-size: 14px;
+  padding: 10px 0 0 10px;
+  color: white;
+}
+
 
 .offline {
   background: url("../img/connection-offline.png");
@@ -36,4 +48,38 @@ body {
 
 .online {
   background: url("../img/connection-online.png");
+}
+
+#speed-container {
+  color: white;
+}
+
+#current_speed_num {
+  position: absolute;
+  top: 260px;
+  left: 195px;
+  font-size: 24px;
+  background: transparent;
+  letter-spacing: 14px;
+}
+
+#speed_statistics_container {
+  position: absolute;
+  top: 410px;
+  left: 170px;
+  font-size: 22px;
+}
+
+#current_altitude_num {
+  position: absolute;
+  top: 260px;
+  left: 530px;
+  font-size: 24px;
+}
+
+#altitude_statistics_container {
+  position: absolute;
+  top: 410px;
+  left: 500px;
+  font-size: 22px;
 }

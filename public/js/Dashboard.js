@@ -1,62 +1,72 @@
 // Backbone app
 
 (function($) {
-  window.Speed = Backbone.Model.extend({
+  
+  //
+  // Common telemetry model for both speed and altitude
+  //
+  
+  window.Telemetry = Backbone.Model.extend({
     defaults: {
+      'min' : '',
+      'max' : '',
       'average': 0,
-      'current': 0,
-      'airspeedArray': []
+      'current': 0
     },
-    
+  
     initialize: function() {
      this.on('change:current', this.calculateValues, this);
     },
-    
+  
     // Calculating min, max and avg values
     calculateValues: function() {  
       var current = this.get('current');
-      var airspeedArray = this.get('airspeedArray');
-      
+      var dataArray = this.get('dataArray');
+    
       // Updating tracked speed array with the latest value
-      this.attributes.airspeedArray.push(current);
-      
+      this.attributes.dataArray.push(current);
+    
       // Calculating average speed based on the tracked speed
-      var speedSum = 0;
-      for (var i in airspeedArray) { 
-        speedSum += airspeedArray[i];
+      var dataSum = 0;
+      for (var i in dataArray) { 
+        dataSum += dataArray[i];
       }
-      
+    
       // Now calculating the average speed
-      average = speedSum / airspeedArray.length;
+      average = dataSum / dataArray.length;
       this.set('average', average);
       console.log(average);
-      
+    
       // Updating min speed value
-      if (this.attributes.hasOwnProperty('min')) {
+      if (this.get('min') != '') {
         if (current < this.get('min')) this.set('min', current);
       } else {
         this.set('min', current);
       }
-      
+    
       //Updating max speed value
-      if (this.attributes.hasOwnProperty('max')) {
+      if (this.get('max') != '') {
         if (current > this.get('max')) this.set('max', current);
       } else {
         this.set('max', current);
       }
-      
-      
-      console.log('Event in speed model!');
     }
   });
   
+  
+  //
+  // Speed related view
+  //
+  window.Speed = Telemetry.extend({
+  });
+  
   window.SpeedView = Backbone.View.extend({
-    className: 'current_speed',
+    id: 'speed-container',
     
     initialize: function(){
       _.bindAll(this, 'render');
       this.model.bind('change', this.render);
-      this.template = _.template($('#test-template').html());
+      this.template = _.template($('#speed-template').html());
     },
     
     render: function() {
@@ -66,10 +76,49 @@
     }
   });
   
+  // Creating actual objects for Speed model and view
   window.speed = new Speed({});
-  //speed.on('change:current', this.calculateValues, this);
+  
+  // Initialize separate data array for this telemetry object
+  speed.set('dataArray', []);
   
   window.speedView = new SpeedView({model: speed});
+  
+  //
+  // Altitude related model and view
+  //
+  
+  window.Altitude = Telemetry.extend({
+  });
+  
+  window.AltitudeView = Backbone.View.extend({
+    id: 'altitude-container',
+    
+    initialize: function(){
+      _.bindAll(this, 'render');
+      this.model.bind('change', this.render);
+      this.template = _.template($('#altitude-template').html());
+    },
+    
+    render: function() {
+      var renderedContent = this.template(this.model.toJSON());
+      $(this.el).html(renderedContent);
+      return this;
+    }
+  });
+  
+  // Creating actual objects for Altitude model and view
+  window.altitude = new Altitude({});
+  
+  // Initialize separate data array for this telemetry object
+  altitude.set('dataArray', []);
+  
+  window.altitudeView = new AltitudeView({model: altitude});
+  
+  
+  //
+  // Main router
+  //
   
   window.Dashboard = Backbone.Router.extend({
     routes: {
@@ -80,9 +129,10 @@
     },
     
     home: function() {
-      var $container = $('#speed_container');
+      var $container = $('#container');
       $container.empty();
       $container.append(speedView.render().el);
+      $container.append(altitudeView.render().el);
     }
   });
   
@@ -91,15 +141,18 @@
     Backbone.history.start({pushState: true});
   });
 
+
+  //
   // Websockets logic
+  //
+  
   window.initSockets = function() {
     if ("WebSocket" in window)
-    {
-       console.log("WebSocket is supported by your Browser!");
-       
+    {  
        // Updating connection indicator to 'connecting' state
        $('#connection_indicator').removeClass();
        $('#connection_indicator').addClass('connecting');
+       $('#connection_state_text').text('Connecting');
        
        // Let us open a web socket
        var ws = new WebSocket("ws://ec2-79-125-71-146.eu-west-1.compute.amazonaws.com:8888/telemetry");
@@ -108,6 +161,7 @@
          // Update connection indicator
          $('#connection_indicator').removeClass();
          $('#connection_indicator').addClass('online');
+         $('#connection_state_text').text('Online');
          
           // Web Socket is connected, send data using send()
           ws.send("Message to send");
@@ -133,16 +187,22 @@
           // Update connection indicator
           $('#connection_indicator').removeClass();
           $('#connection_indicator').addClass('offline');
+          $('#connection_state_text').text('Offline');
           
-          // TODO: need to renew connection to the server
+          // Renewing connection to the server
+          //initSockets();
        };
     }
     else
     {
        // The browser doesn't support WebSocket
-       console.log("WebSocket NOT supported by your browser :(");
+       console.log("WebSockets are not supported by your browser :(");
     }    
   };
+  
+  //
+  // Utility methods
+  //
   
   // Adapter method for accepting and validating input data
   // Basically this method is abstracting the data protocol.
@@ -150,7 +210,6 @@
   // appropriate protocol handler method, and call this adapter method
   // with received data
   var dataAdaptation = function(data) {
-    // First try to parse the data into objects
     var parsed_objects;
     try {
       parsed_objects = eval("(" + data + ")");
@@ -164,6 +223,13 @@
             speed.set('current',  current);
           }
         }
+        
+        if (parsed_objects.telemetry.hasOwnProperty('altitude')) {
+          if (validateAltitude(parsed_objects.telemetry.altitude)) {
+            var current = parsed_objects.telemetry.altitude;
+            altitude.set('current',  current);
+          }
+        }
       }
     }
     catch (err) {
@@ -172,16 +238,40 @@
     
   };
   
-  // Validating the value of speed in knots
+  // Validating value of speed in knots
   var validateSpeed = function(value) {
     var maxSpeed = 420;
     var minSpeed = 0;
+    var maxDifferenceToPreviousValue = 200; // safe assumptions here
     
     // Check if value is not a number
-    if (isNaN(value)) {
+    if (isNaN(value))
       return false;
-    }
+    
+    // Filtering out values with too big difference to the previous value
+    var previousValue = _.last(speed.get('dataArray'));
+    if (Math.abs(value - previousValue) > maxDifferenceToPreviousValue)
+      return false;
+
     return (value >= minSpeed && value <= maxSpeed);
-  }
+  };
+  
+  // Validating new value of altitude in feet
+  var validateAltitude = function(value) {
+    var maxAltitude = 40000; // safe to assume that our plane is not climbing altitudes over 12km
+    var minAltitude = 0;
+    var maxDifferenceToPreviousValue = 5000;
+    
+    // Check if value is not a number
+    if (isNaN(value))
+      return false;
+    
+    // Filtering out values with too big difference to the previous value
+    var previousValue = _.last(altitude.get('dataArray'));
+    if (Math.abs(value - previousValue) > maxDifferenceToPreviousValue)
+      return false;
+    
+    return (value >= minAltitude && value <= maxAltitude);
+  };
 
 })(Zepto);

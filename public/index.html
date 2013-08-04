@@ -34,23 +34,29 @@
         
         <!-- Speed view template -->
         <script type="text/template" id="speed-template">
-          <ul>
-            <li>Current speed: <%= current %></li>
-            <li>Min: <%= min %></li>
-            <li>Max: <%= max %></li>
-            <li>Avg: <%= average %></li>
-          </ul>
+            <div id="current_speed_num"><%= current %></div>
+            <div id="speed_statistics_container">
+              <div class="speed_data_number"><%= min %></div>
+              <div class="speed_data_number"><%= max %></div>
+              <div class="speed_data_number"><%= average %></div>
+            </div>
         </script>
-        <script type="text/template" id="test-template">
-          <h1>Current speed is <%= current %></h1>
+        
+        <!-- Altitude view template -->
+        <script type="text/template" id="altitude-template">
+            <div id="current_altitude_num"><%= current %></div>
+            <div id="altitude_statistics_container">
+              <div class="altitude_data_number"><%= min %></div>
+              <div class="altitude_data_number"><%= max %></div>
+              <div class="altitude_data_number"><%= average %></div>
+            </div>
         </script>
     </head>
     <body>
       <div id="container">
-        <div id="speed_container">
-        </div>
-        <div id="connection_indicator" class="offline">
-        </div>
+      </div>
+      <div id="connection_state_container">
+        <span id="connection_indicator" class="offline"></span><span id="connection_state_text">Offline</span>
       </div>
 
         <script src="js/vendor/zepto.min.js"></script>
